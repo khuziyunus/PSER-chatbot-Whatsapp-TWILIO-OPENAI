@@ -11,16 +11,21 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 
-DATA_PATH = Path(__file__).resolve().parent / "data" / "acm_giki.txt"
-DEFAULT_HISTORY_SUMMARY = "The user has just started the conversation."
-MAX_HISTORY_MESSAGES = 8
-
 load_dotenv()
+
+DEFAULT_DATA_PATH = Path(__file__).resolve().parent / "data" / "PSER_info.txt"
+DATA_RAG_ENV = os.getenv("DATA_RAG")
+DATA_PATH = Path(DATA_RAG_ENV).expanduser() if DATA_RAG_ENV else DEFAULT_DATA_PATH
+CONTEXTUALIZER_ENABLED = os.getenv("ENABLE_CONTEXTUALIZER", "false").lower() == "true"
+DEFAULT_HISTORY_SUMMARY = "The user has just started the conversation."
+MAX_HISTORY_MESSAGES = 4
 
 
 def _load_corpus() -> str:
     if not DATA_PATH.exists():
         raise FileNotFoundError(f"Knowledge base file not found at {DATA_PATH}")
+    if DATA_PATH.suffix.lower() != ".txt":
+        raise ValueError(f"Knowledge base must point to a .txt file, got {DATA_PATH}")
     return DATA_PATH.read_text(encoding="utf-8")
 
 
@@ -28,8 +33,8 @@ def _load_corpus() -> str:
 def _vectorstore() -> FAISS:
     corpus = _load_corpus()
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=200,
-        chunk_overlap=30,
+        chunk_size=400,
+        chunk_overlap=40,
         separators=["\n\n", "\n", " ", ""],
     )
     chunks = text_splitter.split_text(corpus)
@@ -107,7 +112,7 @@ def _format_chat_history(history: Sequence[dict] | None) -> str:
 
 
 def _contextualize_question(question: str, chat_history: Sequence[dict] | None) -> str:
-    if not chat_history:
+    if not CONTEXTUALIZER_ENABLED or not chat_history:
         return question
     chain = _contextualizer_chain()
     response = chain.invoke(
@@ -134,7 +139,7 @@ def answer_question(
     search_query = _contextualize_question(question, chat_history)
 
     vectorstore = _vectorstore()
-    docs = vectorstore.similarity_search(search_query, k=5)
+    docs = vectorstore.similarity_search(search_query, k=3)
     context = _build_context(docs)
     chain = _rag_chain()
     response = chain.invoke(

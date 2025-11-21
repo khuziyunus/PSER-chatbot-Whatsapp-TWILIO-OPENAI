@@ -22,14 +22,10 @@ TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
 TWILIO_WHATSAPP_NUMBER = os.getenv("TWILIO_WHATSAPP_NUMBER")
 
 app = FastAPI(
-    title="Twilio-OpenAI-WhatsApp-Bot",
-    description="Twilio OpenAI WhatsApp Bot",
-    version="0.0.1",
-    contact={
-        "name": "Lena Shakurova",
-        "url": "http://shakurova.io/",
-        "email": "lena@shakurova.io",
-    }
+    title="PSER-Twilio-OpenAI-WhatsApp-Bot",
+    description="PSER WhatsApp Bot",
+    version="0.0.2",
+
 )
 
 app.add_middleware(

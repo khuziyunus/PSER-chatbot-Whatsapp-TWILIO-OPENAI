@@ -1,0 +1,48 @@
+ ---------
+ Punjab Socio-Economic Registry (PSER), 
+ a government initiative in Punjab, Pakistan, 
+ to create a database of households for better targeting of social welfare programs. 
+ It is a department-level project under the Planning and Development Board and is overseen by the 
+ Senior Minister for Planning and Development, Mariyyum Aurangzeb. 
+ The PSER initiative uses a comprehensive survey to collect data on 
+ demographics, assets, and living conditions to identify families in need.
+---------
+Purpose and functions
+Centralized Data Repository: The PSER acts as a centralized, real-time database for 
+detailed household information.
+Proxy Means Test (PMT): It generates a PMT score to help identify and prioritize
+families eligible for government assistance programs.
+Improved Welfare Programs: The data helps the government design more responsive, transparent, and accurately targeted welfare programs.
+Facilitating Access: It helps provide access to subsidized health services, education, and financial assistance, such as the CM Punjab Ration Card program. 
+---------
+Executive Agency:
+Implementation partners: 
+Punjab Social Protection Authority (PSPA)- Lead Agency
+Bureau of Statistics (BOS)  
+The Urban Unit 
+Punjab Information Technology Board (PITB) 
+District Administration
+Coordination Support Unit (CSU)
+---------
+PSER Design:
+Geographical Coverage
+Covering all areas of Punjab
+Public Awareness Campaigns
+Utilizing diverse media channels including radio, TV, social media, and print
+Organizing community meetings, workshops, and seminars to engage the public
+Workshops and Training
+Providing training sessions for enumerators, teachers, coordinators, and other officials
+4.   Hybrid Approach
+Beta Families 
+Households 
+5.   Data Collection 
+CAPI Based - Tablets
+GPS Coordinates
+---------
+Links:
+Instagram: https://www.instagram.com/pser.punjab/?hl=en
+Facebook: https://web.facebook.com/pser.punjab/?_rdc=1&_rdr#
+TikTok: https://www.tiktok.com/@pser.punjab
+
+
+
