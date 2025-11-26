@@ -22,7 +22,7 @@ os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
 # os.environ["AWS_REGION_NAME"] = REGION_NAME
 
 # Constants
-TEMPERATURE = 0.1
+TEMPERATURE = 0.65
 MAX_TOKENS = 350
 STOP_SEQUENCES = ["==="]
 TOP_P = 1
@@ -100,3 +100,131 @@ def summarise_conversation(history):
     chatbot_response = openai_response.choices[0].message.content.strip()
 
     return chatbot_response
+
+
+def translate_text_to_urdu(text: str) -> str:
+    try:
+        project_id = os.getenv("GOOGLE_PROJECT_ID")
+        location = os.getenv("GOOGLE_LOCATION", "global")
+        if project_id:
+            from google.cloud import translate
+            client = translate.TranslationServiceClient()
+            parent = f"projects/{project_id}/locations/{location}"
+            response = client.translate_text(
+                request={
+                    "parent": parent,
+                    "contents": [text],
+                    "mime_type": "text/plain",
+                    "target_language_code": "ur",
+                }
+            )
+            translated = response.translations[0].translated_text
+            if translated:
+                return translated.strip()
+    except Exception:
+        pass
+
+    openai_response = completion(
+        model="gpt-3.5-turbo-0125",
+        messages=[
+            {"role": "system", "content": "Translate the user input into Urdu. Return only the translated text."},
+            {"role": "user", "content": text},
+        ],
+        temperature=0.2,
+        max_tokens=MAX_TOKENS,
+        top_p=TOP_P,
+        frequency_penalty=FREQUENCY_PENALTY,
+        presence_penalty=PRESENCE_PENALTY,
+        stream=False,
+    )
+    return openai_response.choices[0].message.content.strip()
+
+
+def detect_language(text: str) -> str | None:
+    try:
+        project_id = os.getenv("GOOGLE_PROJECT_ID")
+        location = os.getenv("GOOGLE_LOCATION", "global")
+        if project_id:
+            from google.cloud import translate
+            client = translate.TranslationServiceClient()
+            parent = f"projects/{project_id}/locations/{location}"
+            response = client.detect_language(
+                request={
+                    "parent": parent,
+                    "content": text,
+                }
+            )
+            if response.languages:
+                code = response.languages[0].language_code
+                return code
+    except Exception:
+        pass
+
+    try:
+        resp = completion(
+            model="gpt-3.5-turbo-0125",
+            messages=[
+                {"role": "system", "content": "Detect the language of the user input and return only the ISO 639-1 code (e.g., en, ur, ar, fr)."},
+                {"role": "user", "content": text},
+            ],
+            temperature=0.0,
+            max_tokens=5,
+            top_p=TOP_P,
+            frequency_penalty=FREQUENCY_PENALTY,
+            presence_penalty=PRESENCE_PENALTY,
+            stream=False,
+        )
+        code = resp.choices[0].message.content.strip().lower()
+        if code:
+            return code
+    except Exception:
+        pass
+    return None
+
+
+def translate_text(text: str, target_language_code: str) -> str:
+    if not text:
+        return ""
+    try:
+        project_id = os.getenv("GOOGLE_PROJECT_ID")
+        location = os.getenv("GOOGLE_LOCATION", "global")
+        if project_id:
+            from google.cloud import translate
+            client = translate.TranslationServiceClient()
+            parent = f"projects/{project_id}/locations/{location}"
+            response = client.translate_text(
+                request={
+                    "parent": parent,
+                    "contents": [text],
+                    "mime_type": "text/plain",
+                    "target_language_code": target_language_code,
+                }
+            )
+            translated = response.translations[0].translated_text
+            if translated:
+                return translated.strip()
+    except Exception:
+        pass
+
+    resp = completion(
+        model="gpt-3.5-turbo-0125",
+        messages=[
+            {"role": "system", "content": f"Translate the user input into {target_language_code}. Return only the translated text."},
+            {"role": "user", "content": text},
+        ],
+        temperature=0.2,
+        max_tokens=MAX_TOKENS,
+        top_p=TOP_P,
+        frequency_penalty=FREQUENCY_PENALTY,
+        presence_penalty=PRESENCE_PENALTY,
+        stream=False,
+    )
+    return resp.choices[0].message.content.strip()
+
+
+def detect_and_translate_to_english(text: str) -> tuple[str, str | None]:
+    code = detect_language(text) or "en"
+    if code == "en":
+        return text, code
+    translated = translate_text(text, "en")
+    return translated, code
