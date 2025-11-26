@@ -1,5 +1,3 @@
-# PSER-chatbot-Whatsapp-TWILIO-OPENAI
-Chatbot for people to interact with the PSER Department under development
 # Twilio-OpenAI-WhatsApp-Bot
 
 This repo contains code to build a chatbot in Python that runs in WhatsApp and answers user messages using OpenAI API. Developed with FastAPI and we use Twilio for Business WhatsApp integration. The source code is available on GitHub under an open-source license.
@@ -50,7 +48,7 @@ To get started, follow these steps:
    docker --version
    ```
 
-4. Create a `.env` file in the project directory and set your OpenAI API key and Twilio account details as environment variables:
+4. Create a `.env` file in the project directory and set your OpenAI API key, Twilio account details, and (optionally) the knowledge-base file path as environment variables. By default, the app uses `app/data/PSER_info.txt`.
    ```plaintext
     TWILIO_WHATSAPP_NUMBER=<your Twilio phone number>
     TWILIO_ACCOUNT_SID=<your Twilio account SID>
@@ -59,7 +57,13 @@ To get started, follow these steps:
     REDIS_HOST=<your redis host>
     REDIS_PORT=<your redis port>
     REDIS_PASSWORD=<your redis password>
+    DATA_RAG=<optional absolute or relative path to a .txt knowledge base file>
    ```
+   Optional tuning flags (set only if needed):
+   - `ENABLE_CHAT_HISTORY=true|false` — keep Redis conversation memory.
+   - `ENABLE_CONTEXTUALIZER=true|false` — rewrite follow-up questions.
+   - `DEBUG_RAG_CHUNKS=true|false` — log retrieved context chunks.
+   - `RAG_PROVIDER=openai|groq`, `RAG_OPENAI_MODEL`, `RAG_GROQ_MODEL`, `RAG_TEMPERATURE`, `RAG_MAX_TOKENS`, `GROQ_API_KEY`.
 
 5. Build and start the chatbot containers by running:
    ```bash

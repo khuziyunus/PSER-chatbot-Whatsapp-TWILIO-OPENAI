@@ -22,7 +22,7 @@ os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
 # os.environ["AWS_REGION_NAME"] = REGION_NAME
 
 # Constants
-TEMPERATURE = 0.1
+TEMPERATURE = 0.65
 MAX_TOKENS = 350
 STOP_SEQUENCES = ["==="]
 TOP_P = 1
@@ -100,3 +100,41 @@ def summarise_conversation(history):
     chatbot_response = openai_response.choices[0].message.content.strip()
 
     return chatbot_response
+
+
+def translate_text_to_urdu(text: str) -> str:
+    try:
+        project_id = os.getenv("GOOGLE_PROJECT_ID")
+        location = os.getenv("GOOGLE_LOCATION", "global")
+        if project_id:
+            from google.cloud import translate
+            client = translate.TranslationServiceClient()
+            parent = f"projects/{project_id}/locations/{location}"
+            response = client.translate_text(
+                request={
+                    "parent": parent,
+                    "contents": [text],
+                    "mime_type": "text/plain",
+                    "target_language_code": "ur",
+                }
+            )
+            translated = response.translations[0].translated_text
+            if translated:
+                return translated.strip()
+    except Exception:
+        pass
+
+    openai_response = completion(
+        model="gpt-3.5-turbo-0125",
+        messages=[
+            {"role": "system", "content": "Translate the user input into Urdu. Return only the translated text."},
+            {"role": "user", "content": text},
+        ],
+        temperature=0.2,
+        max_tokens=MAX_TOKENS,
+        top_p=TOP_P,
+        frequency_penalty=FREQUENCY_PENALTY,
+        presence_penalty=PRESENCE_PENALTY,
+        stream=False,
+    )
+    return openai_response.choices[0].message.content.strip()
