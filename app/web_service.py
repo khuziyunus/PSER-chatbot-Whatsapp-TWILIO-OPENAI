@@ -1,0 +1,22 @@
+from app.logger_utils import logger
+
+
+def _extract_final_answer(response_text: str) -> str:
+    marker = "Final Answer:"
+    if marker in response_text:
+        return response_text.split(marker, 1)[1].strip()
+    return response_text.strip()
+
+
+def process_web_message(message: str) -> str:
+    query = message or ""
+    try:
+        from app.openai_utils import detect_and_translate_to_english, translate_text
+        from app.rag_utils import answer_question as answer_with_rag
+        query_english, source_lang = detect_and_translate_to_english(query)
+        rag_response = answer_with_rag(query_english, history_summary="Chat history disabled.", chat_history=None)
+        chatbot_response = _extract_final_answer(rag_response)
+        final_response = translate_text(chatbot_response, source_lang) if source_lang and source_lang != "en" else chatbot_response
+        return final_response
+    except Exception:
+        return "Please contact at [insert helpline]"

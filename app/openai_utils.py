@@ -22,11 +22,11 @@ os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
 # os.environ["AWS_REGION_NAME"] = REGION_NAME
 
 # Constants
-TEMPERATURE = 0.65
+TEMPERATURE = 0.25
 MAX_TOKENS = 350
 STOP_SEQUENCES = ["==="]
-TOP_P = 1
-TOP_K = 1
+TOP_P = 0.9
+TOP_K = 0.1
 BEST_OF = 1
 FREQUENCY_PENALTY = 0
 PRESENCE_PENALTY = 0
@@ -168,7 +168,7 @@ def detect_language(text: str) -> str | None:
                 {"role": "user", "content": text},
             ],
             temperature=0.0,
-            max_tokens=5,
+            max_tokens=m,
             top_p=TOP_P,
             frequency_penalty=FREQUENCY_PENALTY,
             presence_penalty=PRESENCE_PENALTY,
