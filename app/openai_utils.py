@@ -22,7 +22,7 @@ os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
 # os.environ["AWS_REGION_NAME"] = REGION_NAME
 
 # Constants
-TEMPERATURE = 0.25
+TEMPERATURE = 0.35
 MAX_TOKENS = 350
 STOP_SEQUENCES = ["==="]
 TOP_P = 0.9
@@ -156,6 +156,8 @@ def detect_language(text: str) -> str | None:
             )
             if response.languages:
                 code = response.languages[0].language_code
+                if code:
+                    code = code.split("-")[0].lower()
                 return code
     except Exception:
         pass
@@ -168,13 +170,15 @@ def detect_language(text: str) -> str | None:
                 {"role": "user", "content": text},
             ],
             temperature=0.0,
-            max_tokens=m,
+            max_tokens=MAX_TOKENS,
             top_p=TOP_P,
             frequency_penalty=FREQUENCY_PENALTY,
             presence_penalty=PRESENCE_PENALTY,
             stream=False,
         )
         code = resp.choices[0].message.content.strip().lower()
+        if code:
+            code = code.split("-")[0]
         if code:
             return code
     except Exception:
@@ -212,7 +216,7 @@ def translate_text(text: str, target_language_code: str) -> str:
             {"role": "system", "content": f"Translate the user input into {target_language_code}. Return only the translated text."},
             {"role": "user", "content": text},
         ],
-        temperature=0.2,
+        temperature=0.45,
         max_tokens=MAX_TOKENS,
         top_p=TOP_P,
         frequency_penalty=FREQUENCY_PENALTY,
