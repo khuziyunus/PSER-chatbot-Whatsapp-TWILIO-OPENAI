@@ -32,6 +32,7 @@ tools = [add_tool, multiply_tool, divide_tool]
 tools_by_name = {t.name: t for t in tools}
 
 def get_model_with_tools():
+    """Return a chat model bound with arithmetic tools."""
     m = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
     return m.bind_tools(tools)
 
@@ -42,6 +43,7 @@ class MessagesState(TypedDict):
 
 
 def llm_call(state: dict):
+    """Invoke the LLM with system prompt and user messages; increment call count."""
     return {
         "messages": [
             get_model_with_tools().invoke(
@@ -56,6 +58,7 @@ def llm_call(state: dict):
 
 
 def tool_node(state: dict):
+    """Execute any requested tools from the last LLM message and return observations."""
     result = []
     last = state["messages"][-1]
     for tool_call in getattr(last, "tool_calls", []) or []:
@@ -66,6 +69,7 @@ def tool_node(state: dict):
 
 
 def should_continue(state: MessagesState) -> Literal["tool_node", END]:
+    """Route to `tool_node` if tools are requested; otherwise terminate."""
     messages = state["messages"]
     last_message = messages[-1]
     if getattr(last_message, "tool_calls", []):
@@ -83,6 +87,7 @@ agent = agent_builder.compile()
 
 
 def run_calculator_agent(question: str) -> str:
+    """Run the calculator agent; fall back to regex-based parser without API key."""
     if not os.getenv("OPENAI_API_KEY"):
         return _simple_calc(question)
     messages = [HumanMessage(content=question)]
@@ -92,6 +97,7 @@ def run_calculator_agent(question: str) -> str:
 
 
 def _simple_calc(q: str) -> str:
+    """Very small parser to support add/multiply/divide when LLM is unavailable."""
     s = q.strip().lower()
     m = re.search(r"add\s+(\d+)\s+(and|\+)\s+(\d+)", s)
     if m:
@@ -104,3 +110,8 @@ def _simple_calc(q: str) -> str:
         b = int(m.group(3)) or 1
         return str(int(m.group(1)) / b)
     return "Unable to compute"
+"""Demo calculator agent using LangGraph and tool-calling.
+
+Shows how to bind simple arithmetic tools to an LLM and route between
+LLM calls and tool execution until a final answer is produced.
+"""

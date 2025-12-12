@@ -6,9 +6,7 @@ from app.logger_utils import logger
 
 
 class MessageDispatcher:
-    """
-    Simple threaded queue to fan out outbound WhatsApp messages without blocking the request thread.
-    """
+    """Simple threaded queue for non-blocking outbound processing."""
 
     def __init__(self, worker_fn: Callable[..., None], worker_count: int = 2) -> None:
         if worker_count < 1:
@@ -30,6 +28,7 @@ class MessageDispatcher:
         self._queue.put((args, kwargs))
 
     def _worker(self) -> None:
+        """Background worker loop that pulls tasks and invokes `worker_fn`."""
         while not self._stop_event.is_set():
             try:
                 args, kwargs = self._queue.get(timeout=0.5)
@@ -43,5 +42,11 @@ class MessageDispatcher:
                 self._queue.task_done()
 
     def pending_tasks(self) -> int:
+        """Return the approximate number of queued tasks."""
         return self._queue.qsize()
 
+"""Threaded message dispatch queue.
+
+Provides a small worker pool to process outbound tasks without blocking
+request handlers. Workers invoke a provided `worker_fn` with queued args.
+"""

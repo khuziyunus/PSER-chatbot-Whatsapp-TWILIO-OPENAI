@@ -1,4 +1,14 @@
-# Twilio-OpenAI-WhatsApp-Bot/app/openai_utils.py
+"""Language utilities for PSER chatbot.
+
+Provides:
+- Conversation summarization for short memory
+- Language detection (Google Cloud Translate v3)
+- Text translation (Google Cloud Translate v3)
+- Thin wrapper for LLM calls used in summarization
+
+These helpers are used by the FastAPI handlers to normalize user input and
+produce answers in the user's original language.
+"""
 
 import os 
 from dotenv import load_dotenv
@@ -50,7 +60,7 @@ SUPPORTED_MODELS = {
 
 
 def gpt_without_functions(model, stream=False, messages=[]):
-    """ GPT model without function call. """
+    """Call an LLM for non-tool usage (used for summarization)."""
     if model not in SUPPORTED_MODELS:
         return False
     response = completion(
@@ -68,7 +78,7 @@ def gpt_without_functions(model, stream=False, messages=[]):
 
 
 def summarise_conversation(history):
-    """Summarise conversation history in one sentence"""
+    """Summarize recent conversation turns into a short, single paragraph."""
 
     if not history:
         return "No prior conversation."
@@ -103,6 +113,10 @@ def summarise_conversation(history):
 
 
 def translate_text_to_urdu(text: str) -> str:
+    """Translate a text snippet to Urdu using Google Cloud Translate.
+
+    Returns the original text if translation is unavailable.
+    """
     try:
         project_id = os.getenv("GOOGLE_PROJECT_ID")
         location = os.getenv("GOOGLE_LOCATION", "global")
@@ -127,6 +141,10 @@ def translate_text_to_urdu(text: str) -> str:
 
 
 def detect_language(text: str) -> str | None:
+    """Detect the ISO 639-1 language code using Google Cloud Translate.
+
+    Returns `None` if detection is unavailable.
+    """
     try:
         project_id = os.getenv("GOOGLE_PROJECT_ID")
         location = os.getenv("GOOGLE_LOCATION", "global")
@@ -151,6 +169,10 @@ def detect_language(text: str) -> str | None:
 
 
 def translate_text(text: str, target_language_code: str) -> str:
+    """Translate text to a target language code (ISO 639-1) using Google.
+
+    Returns the input text unchanged when translation is unavailable.
+    """
     if not text:
         return ""
     try:
@@ -177,6 +199,7 @@ def translate_text(text: str, target_language_code: str) -> str:
 
 
 def detect_and_translate_to_english(text: str) -> tuple[str, str | None]:
+    """Detect language and return an English-normalized text copy plus code."""
     code = detect_language(text) or "en"
     if code == "en":
         return text, code

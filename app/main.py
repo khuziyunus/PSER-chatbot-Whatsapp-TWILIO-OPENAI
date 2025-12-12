@@ -38,7 +38,7 @@ app.add_middleware(
 )
 
 def respond(to_number, message) -> None:
-    """ Send a message via Twilio WhatsApp """
+    """Send a WhatsApp message via Twilio."""
     TWILIO_WHATSAPP_PHONE_NUMBER = "whatsapp:" + TWILIO_WHATSAPP_NUMBER
     twilio_client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
     from_whatsapp_number = TWILIO_WHATSAPP_PHONE_NUMBER
@@ -49,6 +49,14 @@ def respond(to_number, message) -> None:
 
 @app.post('/whatsapp-endpoint')
 async def whatsapp_endpoint(request: Request, From: str = Form(...), Body: str = Form(...)):
+    """Handle inbound WhatsApp messages from Twilio.
+
+    - Logs inbound request
+    - Detects and normalizes language, translates to English for RAG
+    - Runs RAG, extracts `Final Answer`, translates back to source language
+    - Persists minimal chat history in Redis (if enabled)
+    - Sends response via Twilio
+    """
     logger.info(f'WhatsApp endpoint triggered...')
     logger.info(f'Request: {request}')
     logger.info(f'From: {From}')
@@ -101,3 +109,9 @@ async def whatsapp_endpoint(request: Request, From: str = Form(...), Body: str =
 if __name__ == '__main__':
     import uvicorn
     uvicorn.run("app.main:app", host='0.0.0.0', port=3002, reload=True)
+"""FastAPI application for PSER WhatsApp chatbot.
+
+Exposes a Twilio webhook that receives WhatsApp messages, normalizes
+language, runs a RAG pipeline to answer, and responds back via Twilio.
+Optionally stores conversation history in Redis for short-term context.
+"""

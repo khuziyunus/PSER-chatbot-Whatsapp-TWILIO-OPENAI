@@ -2,6 +2,7 @@ from app.logger_utils import logger
 
 
 def _extract_final_answer(response_text: str) -> str:
+    """Extract the answer portion after the `Final Answer:` marker."""
     marker = "Final Answer:"
     if marker in response_text:
         return response_text.split(marker, 1)[1].strip()
@@ -9,6 +10,7 @@ def _extract_final_answer(response_text: str) -> str:
 
 
 def process_web_message(message: str) -> str:
+    """Process a plain text web message through the RAG pipeline."""
     query = message or ""
     try:
         from app.openai_utils import detect_and_translate_to_english, translate_text
@@ -20,3 +22,8 @@ def process_web_message(message: str) -> str:
         return final_response
     except Exception:
         return "Please contact at [insert helpline]"
+"""Web chat message processing helpers.
+
+Mirrors the WhatsApp flow for a web UI: detect/translate, run RAG,
+extract `Final Answer`, and translate back to the user's language.
+"""
