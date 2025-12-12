@@ -205,3 +205,11 @@ def detect_and_translate_to_english(text: str) -> tuple[str, str | None]:
         return text, code
     translated = translate_text(text, "en")
     return translated, code
+
+
+def translate_back_to_source(text: str, source_language_code: str | None) -> str:
+    if not text:
+        return ""
+    if not source_language_code or source_language_code == "en":
+        return text
+    return translate_text(text, source_language_code)

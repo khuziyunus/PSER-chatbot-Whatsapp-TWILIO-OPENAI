@@ -30,8 +30,8 @@ def _safe_translate(text: str, target_language_code: str | None) -> str:
     if not target_language_code or target_language_code == "en":
         return text
     try:
-        from app.openai_utils import translate_text
-        return translate_text(text, target_language_code)
+        from app.openai_utils import translate_back_to_source
+        return translate_back_to_source(text, target_language_code)
     except Exception:
         return text
 
