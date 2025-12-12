@@ -123,21 +123,7 @@ def translate_text_to_urdu(text: str) -> str:
                 return translated.strip()
     except Exception:
         pass
-
-    openai_response = completion(
-        model="gpt-3.5-turbo-0125",
-        messages=[
-            {"role": "system", "content": "Translate the user input into Urdu. Return only the translated text."},
-            {"role": "user", "content": text},
-        ],
-        temperature=0.2,
-        max_tokens=MAX_TOKENS,
-        top_p=TOP_P,
-        frequency_penalty=FREQUENCY_PENALTY,
-        presence_penalty=PRESENCE_PENALTY,
-        stream=False,
-    )
-    return openai_response.choices[0].message.content.strip()
+    return text
 
 
 def detect_language(text: str) -> str | None:
@@ -159,28 +145,6 @@ def detect_language(text: str) -> str | None:
                 if code:
                     code = code.split("-")[0].lower()
                 return code
-    except Exception:
-        pass
-
-    try:
-        resp = completion(
-            model="gpt-3.5-turbo-0125",
-            messages=[
-                {"role": "system", "content": "Detect the language of the user input and return only the ISO 639-1 code (e.g., en, ur, ar, fr)."},
-                {"role": "user", "content": text},
-            ],
-            temperature=0.0,
-            max_tokens=MAX_TOKENS,
-            top_p=TOP_P,
-            frequency_penalty=FREQUENCY_PENALTY,
-            presence_penalty=PRESENCE_PENALTY,
-            stream=False,
-        )
-        code = resp.choices[0].message.content.strip().lower()
-        if code:
-            code = code.split("-")[0]
-        if code:
-            return code
     except Exception:
         pass
     return None
@@ -209,21 +173,7 @@ def translate_text(text: str, target_language_code: str) -> str:
                 return translated.strip()
     except Exception:
         pass
-
-    resp = completion(
-        model="gpt-3.5-turbo-0125",
-        messages=[
-            {"role": "system", "content": f"Translate the user input into {target_language_code}. Return only the translated text."},
-            {"role": "user", "content": text},
-        ],
-        temperature=0.45,
-        max_tokens=MAX_TOKENS,
-        top_p=TOP_P,
-        frequency_penalty=FREQUENCY_PENALTY,
-        presence_penalty=PRESENCE_PENALTY,
-        stream=False,
-    )
-    return resp.choices[0].message.content.strip()
+    return text
 
 
 def detect_and_translate_to_english(text: str) -> tuple[str, str | None]:
