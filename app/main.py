@@ -12,6 +12,7 @@ from app.openai_utils import summarise_conversation, translate_text_to_urdu
 from app.redis_utils import redis_conn
 from app.logger_utils import logger
 from app.rag_utils import answer_question as answer_with_rag
+from app.whatsapp_service import process_whatsapp_message
 
 # Load environment variables from a .env file
 load_dotenv()
@@ -38,7 +39,7 @@ app.add_middleware(
 )
 
 def respond(to_number, message) -> None:
-    """ Send a message via Twilio WhatsApp """
+    """Send a WhatsApp message via Twilio."""
     TWILIO_WHATSAPP_PHONE_NUMBER = "whatsapp:" + TWILIO_WHATSAPP_NUMBER
     twilio_client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
     from_whatsapp_number = TWILIO_WHATSAPP_PHONE_NUMBER
@@ -49,6 +50,14 @@ def respond(to_number, message) -> None:
 
 @app.post('/whatsapp-endpoint')
 async def whatsapp_endpoint(request: Request, From: str = Form(...), Body: str = Form(...)):
+    """Handle inbound WhatsApp messages from Twilio.
+
+    - Logs inbound request
+    - Detects and normalizes language, translates to English for RAG
+    - Runs RAG, extracts `Final Answer`, translates back to source language
+    - Persists minimal chat history in Redis (if enabled)
+    - Sends response via Twilio
+    """
     logger.info(f'WhatsApp endpoint triggered...')
     logger.info(f'Request: {request}')
     logger.info(f'From: {From}')

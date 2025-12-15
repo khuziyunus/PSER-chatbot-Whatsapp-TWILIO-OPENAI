@@ -1,3 +1,14 @@
+"""RAG utilities for PSER chatbot.
+
+This module builds a simple retrieval-augmented generation pipeline:
+- Loads a plain-text knowledge base from `DATA_RAG` or the default PSER file
+- Splits text into chunks and indexes them in a FAISS vector store with OpenAI embeddings
+- Formats recent chat history and optional summary
+- Invokes an LLM with a system prompt tailored to PSER guidelines
+
+Functions here are cached where appropriate to reduce startup and runtime overhead.
+"""
+
 import os
 from functools import lru_cache
 from pathlib import Path
@@ -22,6 +33,10 @@ MAX_HISTORY_MESSAGES = 4
 
 
 def _load_corpus() -> str:
+    """Read the knowledge base .txt file into a single string.
+
+    Raises FileNotFoundError if the path does not exist and ValueError for non-.txt files.
+    """
     if not DATA_PATH.exists():
         raise FileNotFoundError(f"Knowledge base file not found at {DATA_PATH}")
     if DATA_PATH.suffix.lower() != ".txt":
@@ -31,6 +46,7 @@ def _load_corpus() -> str:
 
 @lru_cache(maxsize=1)
 def _vectorstore() -> FAISS:
+    """Build and cache the FAISS vector store from the loaded corpus."""
     corpus = _load_corpus()
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=400,
@@ -45,6 +61,7 @@ def _vectorstore() -> FAISS:
 
 @lru_cache(maxsize=1)
 def _rag_chain():
+    """Create and cache the PSER RAG prompt chain with the chat LLM."""
     llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0.85)
     prompt = ChatPromptTemplate.from_messages(
         [
@@ -73,6 +90,7 @@ def _rag_chain():
 
 @lru_cache(maxsize=1)
 def _contextualizer_chain():
+    """Create and cache a light contextualizer to rewrite follow-ups to standalone questions."""
     llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0.1)
     prompt = ChatPromptTemplate.from_messages(
         [
@@ -99,10 +117,12 @@ def _contextualizer_chain():
 
 
 def _build_context(docs: List[Document]) -> str:
+    """Concatenate retrieved document chunks into a single context string."""
     return "\n\n".join(doc.page_content for doc in docs)
 
 
 def _format_chat_history(history: Sequence[dict] | None) -> str:
+    """Return the most recent `MAX_HISTORY_MESSAGES` turns as human-readable lines."""
     if not history:
         return "No previous turns."
     trimmed = history[-MAX_HISTORY_MESSAGES:]
@@ -133,8 +153,14 @@ def answer_question(
     history_summary: str | None = None,
     chat_history: Sequence[dict] | None = None,
 ) -> str:
-    """
-    Retrieve relevant context from the ACM GIKI corpus and answer a user question.
+    """Retrieve relevant PSER context and answer the user question.
+
+    This function:
+    - Optionally rewrites the question using recent chat history
+    - Performs a similarity search over the FAISS index
+    - Builds the combined context and invokes the RAG chain
+    - Returns the LLM output; the caller is expected to extract the
+      `Final Answer:` portion for display
     """
     if not question:
         return "Final Answer: I didn't receive a question to answer."
