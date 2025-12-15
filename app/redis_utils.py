@@ -13,8 +13,3 @@ redis_conn = redis.Redis(
     port=REDIS_PORT, 
     password=REDIS_PASSWORD,
     db=0)
-"""Redis connection utilities.
-
-Loads configuration from environment and exposes a single `redis_conn`
-client for simple key-value operations used across the app.
-"""
