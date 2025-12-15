@@ -8,10 +8,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from twilio.rest import Client
 
 from app.cookies_utils import set_cookies, get_cookies, clear_cookies
-from app.openai_utils import summarise_conversation, detect_and_translate_to_english, translate_back_to_source_gpt
 from app.redis_utils import redis_conn
 from app.logger_utils import logger
 from app.rag_utils import answer_question as answer_with_rag
+from app.whatsapp_service import process_whatsapp_message
 
 # Load environment variables from a .env file
 load_dotenv()
@@ -63,55 +63,12 @@ async def whatsapp_endpoint(request: Request, From: str = Form(...), Body: str =
     logger.info(f'Incoming message: {Body}')
 
     query = Body
-    query_english, source_lang = detect_and_translate_to_english(query)
     phone_no = From.replace('whatsapp:+', '')
     chat_session_id = phone_no
 
-    history = []
-    history_summary = "Chat history disabled."
-    chat_history_for_rag = None
-
-    if ENABLE_CHAT_HISTORY:
-        stored_history = get_cookies(redis_conn, f'whatsapp_twilio_demo_{chat_session_id}_history') or []
-        if stored_history:
-            history = json.loads(stored_history)
-        history.append({"role": 'user', "content": query})
-        history_summary = summarise_conversation(history)
-        chat_history_for_rag = history
-
-    # Answer user query using the RAG pipeline
-    rag_response = answer_with_rag(query_english, history_summary=history_summary, chat_history=chat_history_for_rag)
-
-    def extract_final_answer(response_text: str) -> str:
-        marker = "Final Answer:"
-        if marker in response_text:
-            return response_text.split(marker, 1)[1].strip()
-        return response_text.strip()
-
-    chatbot_response = extract_final_answer(rag_response)
-    final_response = translate_back_to_source_gpt(query, chatbot_response, source_lang)
+    final_response = process_whatsapp_message(message=query, session_id=chat_session_id, enable_history=ENABLE_CHAT_HISTORY)
     logger.info(f'Outgoing response: {final_response}')
-
-    if ENABLE_CHAT_HISTORY:
-        history.append(
-            {
-                'role': 'assistant',
-                'content': final_response,
-                'raw_response': rag_response,
-            }
-        )
-        set_cookies(redis_conn, name=f'whatsapp_twilio_demo_{chat_session_id}_history', value=json.dumps(history))
 
     # Send the assistant's response back to the user via WhatsApp
     respond(From, final_response)
 
-
-if __name__ == '__main__':
-    import uvicorn
-    uvicorn.run("app.main:app", host='0.0.0.0', port=3002, reload=True)
-"""FastAPI application for PSER WhatsApp chatbot.
-
-Exposes a Twilio webhook that receives WhatsApp messages, normalizes
-language, runs a RAG pipeline to answer, and responds back via Twilio.
-Optionally stores conversation history in Redis for short-term context.
-"""

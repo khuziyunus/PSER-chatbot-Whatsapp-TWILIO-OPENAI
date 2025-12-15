@@ -14,28 +14,6 @@ def _extract_final_answer(response_text: str) -> str:
     return response_text.strip()
 
 
-def _safe_detect_translate_to_english(text: str) -> tuple[str, str | None]:
-    """Detect language and translate to English, falling back to identity."""
-    try:
-        from app.openai_utils import detect_and_translate_to_english
-        return detect_and_translate_to_english(text)
-    except Exception:
-        return text, "en"
-
-
-def _safe_translate(text: str, target_language_code: str | None, question: str | None = None) -> str:
-    """Translate `text` to `target_language_code` with safe fallbacks and context."""
-    if not text:
-        return ""
-    if not target_language_code or target_language_code == "en":
-        return text
-    try:
-        from app.openai_utils import translate_back_to_source_gpt
-        return translate_back_to_source_gpt(question or "", text, target_language_code)
-    except Exception:
-        return text
-
-
 def _safe_answer_with_rag(question: str, history_summary: str | None, chat_history: Sequence[dict] | None) -> str:
     """Run the RAG pipeline and return the model output; fallback on errors."""
     try:
@@ -65,12 +43,12 @@ def _save_history(session_id: str, history: list[dict]) -> None:
 
 
 def process_whatsapp_message(message: str, session_id: str | None, enable_history: bool) -> str:
-    """Main WhatsApp message entry: normalize, answer with RAG, translate, store."""
+    """Main WhatsApp message entry: answer with RAG in same language, store."""
     history: list[dict] = []
     history_summary = "Chat history disabled."
     chat_history_for_rag = None
     query = message or ""
-    query_english, source_lang = _safe_detect_translate_to_english(query)
+    # Pass original question directly to RAG - model will respond in same language
     if enable_history and session_id:
         history = _load_history(session_id)
         history.append({"role": "user", "content": query})
@@ -81,9 +59,10 @@ def process_whatsapp_message(message: str, session_id: str | None, enable_histor
         except Exception:
             history_summary = "Chat history disabled."
             chat_history_for_rag = None
-    rag_response = _safe_answer_with_rag(query_english, history_summary=history_summary, chat_history=chat_history_for_rag)
-    chatbot_response = _extract_final_answer(rag_response)
-    final_response = _safe_translate(chatbot_response, source_lang, query)
+    # RAG chain now handles responding in the same language as the question
+    rag_response = _safe_answer_with_rag(query, history_summary=history_summary, chat_history=chat_history_for_rag)
+    # The response already includes "Final Answer:" in the appropriate language
+    final_response = rag_response
     logger.info(f"Outgoing response: {final_response}")
     if enable_history and session_id:
         history.append({"role": "assistant", "content": final_response, "raw_response": rag_response})
@@ -91,6 +70,6 @@ def process_whatsapp_message(message: str, session_id: str | None, enable_histor
     return final_response
 """WhatsApp message processing helpers.
 
-Wrap language normalization, RAG answering, translation, and chat history
-storage with defensive error handling for production resilience.
+Process WhatsApp messages through RAG pipeline with chat history storage.
+The RAG model responds in the same language as the user's question.
 """

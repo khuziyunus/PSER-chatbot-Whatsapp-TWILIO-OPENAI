@@ -19,7 +19,12 @@ def process_web_message(message: str) -> str:
         rag_response = answer_with_rag(query_english, history_summary="Chat history disabled.", chat_history=None)
         chatbot_response = _extract_final_answer(rag_response)
         final_response = translate_back_to_source_gpt(query, chatbot_response, source_lang)
-        return final_response
+        try:
+            from app.openai_utils import final_answer_label
+            label = final_answer_label(source_lang)
+        except Exception:
+            label = "Final Answer:"
+        return f"{label} {final_response}"
     except Exception:
         return "Please contact at [insert helpline]"
 """Web chat message processing helpers.

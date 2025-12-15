@@ -27,7 +27,7 @@ The implementation strategy relies on phased roll-outs to ensure quality, resour
 and district-level readiness. Each field cycle involves area mapping, local notification campaigns,
 enumerator deployment, and real-time monitoring dashboards. 
 The objective is complete population coverage so that every household in Punjab is included in the socio-economic registry.
-
+the survey is to be completed by 31st dec 2025, if you are not surveyed yet, an enumerator will come to your house before the 31st december. 
 ---
 
 ## *Chunk 4 — Hybrid Data Collection Model*

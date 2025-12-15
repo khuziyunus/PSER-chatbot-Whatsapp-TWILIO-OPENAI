@@ -19,6 +19,8 @@ load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
+USE_GPT_DETECTION = os.getenv("USE_GPT_DETECTION", "false").lower() == "true"
+USE_GPT_FORWARD_TRANSLATION = os.getenv("USE_GPT_FORWARD_TRANSLATION", "false").lower() == "true"
 
 # IF YOU WANT TO ADD MORE MODELS
 # GROQ_API_KEY = os.getenv("GROQ_API_KEY")
@@ -198,14 +200,37 @@ def translate_text(text: str, target_language_code: str) -> str:
     return text
 
 
+
+
 def detect_and_translate_to_english(text: str) -> tuple[str, str | None]:
     """Detect language and return an English-normalized text copy plus code."""
-    code = detect_language(text) or "en"
+    code = detect_language(text) or "ur"
     if code == "en":
         return text, code
+    if USE_GPT_FORWARD_TRANSLATION:
+        try:
+            resp = completion(
+                model="gpt-4o",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "Translate the user's message into English. Preserve meaning and entities. Return only the translated text.",
+                    },
+                    {"role": "user", "content": text},
+                ],
+                temperature=0.0,
+                max_tokens=MAX_TOKENS,
+                top_p=TOP_P,
+                frequency_penalty=FREQUENCY_PENALTY,
+                presence_penalty=PRESENCE_PENALTY,
+                stream=False,
+            )
+            translated = resp.choices[0].message.content.strip()
+        except Exception:
+            translated = translate_text(text, "en")
+        return translated, code
     translated = translate_text(text, "en")
     return translated, code
-
 
 def translate_back_to_source(text: str, source_language_code: str | None) -> str:
     if not text:
@@ -213,7 +238,6 @@ def translate_back_to_source(text: str, source_language_code: str | None) -> str
     if not source_language_code or source_language_code == "en":
         return text
     return translate_text(text, source_language_code)
-
 
 def translate_back_to_source_gpt(
     question: str,
@@ -229,12 +253,11 @@ def translate_back_to_source_gpt(
         {
             "role": "system",
             "content": (
-                "You are a professional translator. Translate the assistant's answer "
-                f"into the language identified by ISO 639-1 code '{source_language_code}'. "
-                "Use the user's original question as context to resolve references. "
-                "Preserve meaning, entities, and formatting such as phone numbers "
-                "ensure that if phone mentioned matches this 0800-02345"
-                "and the phrase 'Final Answer:' if present. Return only the translated answer."
+                "Translate the provided Answer into the same language as the provided Question. "
+                "Do not add, remove, explain, paraphrase, or change meaning. "
+                "Preserve names, entities, formatting, and keep the phone number '0800-02345' unchanged. "
+                "If the Answer contains 'Final Answer:', keep that phrase unchanged and translate only the remainder. "
+                "Return only the translated answer text in the same language as the Question."
             ),
         },
         {
@@ -253,6 +276,47 @@ def translate_back_to_source_gpt(
             presence_penalty=PRESENCE_PENALTY,
             stream=False,
         )
-        return resp.choices[0].message.content.strip()
+        out = (resp.choices[0].message.content or "").strip()
+        if not out:
+            return translate_text(answer, source_language_code)
+        return out
     except Exception:
-        return answer
+        return translate_text(answer, source_language_code)
+
+def final_answer_label(source_language_code: str | None, model: str = "gpt-4o") -> str:
+    code = (source_language_code or "en").lower()
+    mapping = {
+        "en": "Final Answer:",
+        "ur": "حتمی جواب:",
+        "es": "Respuesta final:",
+        "hi": "अंतिम उत्तर:",
+        "ar": "الإجابة النهائية:",
+        "pa": "آخری جواب:",
+        "fr": "Réponse finale :",
+        "de": "Endgültige Antwort:",
+        "tr": "Nihai cevap:",
+    }
+    if code in mapping:
+        return mapping[code]
+    try:
+        resp = completion(
+            model=model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": f"Translate the phrase 'Final Answer:' into the language with ISO 639-1 code '{code}'. Return only the translated phrase.",
+                },
+                {"role": "user", "content": "Final Answer:"},
+            ],
+            temperature=0.0,
+            max_tokens=16,
+            top_p=TOP_P,
+            frequency_penalty=FREQUENCY_PENALTY,
+            presence_penalty=PRESENCE_PENALTY,
+            stream=False,
+        )
+        out = (resp.choices[0].message.content or "").strip()
+        return out or "Final Answer:"
+    except Exception:
+        return "Final Answer:"
+
