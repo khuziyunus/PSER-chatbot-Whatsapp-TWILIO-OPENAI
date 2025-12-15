@@ -1,14 +1,4 @@
-"""Language utilities for PSER chatbot.
-
-Provides:
-- Conversation summarization for short memory
-- Language detection (Google Cloud Translate v3)
-- Text translation (Google Cloud Translate v3)
-- Thin wrapper for LLM calls used in summarization
-
-These helpers are used by the FastAPI handlers to normalize user input and
-produce answers in the user's original language.
-"""
+# Twilio-OpenAI-WhatsApp-Bot/app/openai_utils.py
 
 import os 
 from dotenv import load_dotenv
@@ -19,8 +9,6 @@ load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
-USE_GPT_DETECTION = os.getenv("USE_GPT_DETECTION", "false").lower() == "true"
-USE_GPT_FORWARD_TRANSLATION = os.getenv("USE_GPT_FORWARD_TRANSLATION", "false").lower() == "true"
 
 # IF YOU WANT TO ADD MORE MODELS
 # GROQ_API_KEY = os.getenv("GROQ_API_KEY")
@@ -34,11 +22,11 @@ USE_GPT_FORWARD_TRANSLATION = os.getenv("USE_GPT_FORWARD_TRANSLATION", "false").
 # os.environ["AWS_REGION_NAME"] = REGION_NAME
 
 # Constants
-TEMPERATURE = 0.35
+TEMPERATURE = 0.65
 MAX_TOKENS = 350
 STOP_SEQUENCES = ["==="]
-TOP_P = 0.9
-TOP_K = 0.1
+TOP_P = 1
+TOP_K = 1
 BEST_OF = 1
 FREQUENCY_PENALTY = 0
 PRESENCE_PENALTY = 0
@@ -62,7 +50,7 @@ SUPPORTED_MODELS = {
 
 
 def gpt_without_functions(model, stream=False, messages=[]):
-    """Call an LLM for non-tool usage (used for summarization)."""
+    """ GPT model without function call. """
     if model not in SUPPORTED_MODELS:
         return False
     response = completion(
@@ -80,7 +68,7 @@ def gpt_without_functions(model, stream=False, messages=[]):
 
 
 def summarise_conversation(history):
-    """Summarize recent conversation turns into a short, single paragraph."""
+    """Summarise conversation history in one sentence"""
 
     if not history:
         return "No prior conversation."
@@ -115,10 +103,6 @@ def summarise_conversation(history):
 
 
 def translate_text_to_urdu(text: str) -> str:
-    """Translate a text snippet to Urdu using Google Cloud Translate.
-
-    Returns the original text if translation is unavailable.
-    """
     try:
         project_id = os.getenv("GOOGLE_PROJECT_ID")
         location = os.getenv("GOOGLE_LOCATION", "global")
@@ -139,184 +123,18 @@ def translate_text_to_urdu(text: str) -> str:
                 return translated.strip()
     except Exception:
         pass
-    return text
 
-
-def detect_language(text: str) -> str | None:
-    """Detect the ISO 639-1 language code using Google Cloud Translate.
-
-    Returns `None` if detection is unavailable.
-    """
-    try:
-        project_id = os.getenv("GOOGLE_PROJECT_ID")
-        location = os.getenv("GOOGLE_LOCATION", "global")
-        if project_id:
-            from google.cloud import translate
-            client = translate.TranslationServiceClient()
-            parent = f"projects/{project_id}/locations/{location}"
-            response = client.detect_language(
-                request={
-                    "parent": parent,
-                    "content": text,
-                }
-            )
-            if response.languages:
-                code = response.languages[0].language_code
-                if code:
-                    code = code.split("-")[0].lower()
-                return code
-    except Exception:
-        pass
-    return None
-
-
-def translate_text(text: str, target_language_code: str) -> str:
-    """Translate text to a target language code (ISO 639-1) using Google.
-
-    Returns the input text unchanged when translation is unavailable.
-    """
-    if not text:
-        return ""
-    try:
-        project_id = os.getenv("GOOGLE_PROJECT_ID")
-        location = os.getenv("GOOGLE_LOCATION", "global")
-        if project_id:
-            from google.cloud import translate
-            client = translate.TranslationServiceClient()
-            parent = f"projects/{project_id}/locations/{location}"
-            response = client.translate_text(
-                request={
-                    "parent": parent,
-                    "contents": [text], 
-                    "mime_type": "text/plain",
-                    "target_language_code": target_language_code,
-                }
-            )
-            translated = response.translations[0].translated_text
-            if translated:
-                return translated.strip()
-    except Exception:
-        pass
-    return text
-
-
-
-
-def detect_and_translate_to_english(text: str) -> tuple[str, str | None]:
-    """Detect language and return an English-normalized text copy plus code."""
-    code = detect_language(text) or "ur"
-    if code == "en":
-        return text, code
-    if USE_GPT_FORWARD_TRANSLATION:
-        try:
-            resp = completion(
-                model="gpt-4o",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "Translate the user's message into English. Preserve meaning and entities. Return only the translated text.",
-                    },
-                    {"role": "user", "content": text},
-                ],
-                temperature=0.0,
-                max_tokens=MAX_TOKENS,
-                top_p=TOP_P,
-                frequency_penalty=FREQUENCY_PENALTY,
-                presence_penalty=PRESENCE_PENALTY,
-                stream=False,
-            )
-            translated = resp.choices[0].message.content.strip()
-        except Exception:
-            translated = translate_text(text, "en")
-        return translated, code
-    translated = translate_text(text, "en")
-    return translated, code
-
-def translate_back_to_source(text: str, source_language_code: str | None) -> str:
-    if not text:
-        return ""
-    if not source_language_code or source_language_code == "en":
-        return text
-    return translate_text(text, source_language_code)
-
-def translate_back_to_source_gpt(
-    question: str,
-    answer: str,
-    source_language_code: str | None,
-    model: str = "gpt-4o",
-) -> str:
-    if not answer:
-        return ""
-    if not source_language_code or source_language_code == "en":
-        return answer
-    messages = [
-        {
-            "role": "system",
-            "content": (
-                "Translate the provided Answer into the same language as the provided Question. "
-                "Do not add, remove, explain, paraphrase, or change meaning. "
-                "Preserve names, entities, formatting, and keep the phone number '0800-02345' unchanged. "
-                "If the Answer contains 'Final Answer:', keep that phrase unchanged and translate only the remainder. "
-                "Return only the translated answer text in the same language as the Question."
-            ),
-        },
-        {
-            "role": "user",
-            "content": f"Question:\n{question}\n\nAnswer:\n{answer}",
-        },
-    ]
-    try:
-        resp = completion(
-            model=model,
-            messages=messages,
-            temperature=0.0,
-            max_tokens=MAX_TOKENS,
-            top_p=TOP_P,
-            frequency_penalty=FREQUENCY_PENALTY,
-            presence_penalty=PRESENCE_PENALTY,
-            stream=False,
-        )
-        out = (resp.choices[0].message.content or "").strip()
-        if not out:
-            return translate_text(answer, source_language_code)
-        return out
-    except Exception:
-        return translate_text(answer, source_language_code)
-
-def final_answer_label(source_language_code: str | None, model: str = "gpt-4o") -> str:
-    code = (source_language_code or "en").lower()
-    mapping = {
-        "en": "Final Answer:",
-        "ur": "حتمی جواب:",
-        "es": "Respuesta final:",
-        "hi": "अंतिम उत्तर:",
-        "ar": "الإجابة النهائية:",
-        "pa": "آخری جواب:",
-        "fr": "Réponse finale :",
-        "de": "Endgültige Antwort:",
-        "tr": "Nihai cevap:",
-    }
-    if code in mapping:
-        return mapping[code]
-    try:
-        resp = completion(
-            model=model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": f"Translate the phrase 'Final Answer:' into the language with ISO 639-1 code '{code}'. Return only the translated phrase.",
-                },
-                {"role": "user", "content": "Final Answer:"},
-            ],
-            temperature=0.0,
-            max_tokens=16,
-            top_p=TOP_P,
-            frequency_penalty=FREQUENCY_PENALTY,
-            presence_penalty=PRESENCE_PENALTY,
-            stream=False,
-        )
-        out = (resp.choices[0].message.content or "").strip()
-        return out or "Final Answer:"
-    except Exception:
-        return "Final Answer:"
-
+    openai_response = completion(
+        model="gpt-3.5-turbo-0125",
+        messages=[
+            {"role": "system", "content": "Translate the user input into Urdu. Return only the translated text. Keep the order of the numbers same ie 080002345"},
+            {"role": "user", "content": text},
+        ],
+        temperature=0.2,
+        max_tokens=MAX_TOKENS,
+        top_p=TOP_P,
+        frequency_penalty=FREQUENCY_PENALTY,
+        presence_penalty=PRESENCE_PENALTY,
+        stream=False,
+    )
+    return openai_response.choices[0].message.content.strip()
