@@ -4,7 +4,8 @@ The Punjab Socio-Economic Registry (PSER) is a province-wide socio-economic surv
 The primary goal of PSER is to create a unified, accurate, and continuously updated digital 
 registry of household-level information, including demographics, income indicators, assets, 
 and living conditions. This registry would help the government identify potential beneficiaries for the cash transfer programs with data-driven precision. This collected household data will be used as the foundation for provincial social protection programs, income support schemes, and disaster relief targeting. 
-This is not for targeted subsidies rather just for welfare programs
+This is not for targeted subsidies rather just for welfare programs.
+The survey will end on 31st december 2025.Please contact on our provided helpline 080002345 and an enumerator will be dispatched to your house. 
 ---
 
 ## *Chunk 2 — Strategic Governance Structure of PSER*
@@ -27,7 +28,7 @@ The implementation strategy relies on phased roll-outs to ensure quality, resour
 and district-level readiness. Each field cycle involves area mapping, local notification campaigns,
 enumerator deployment, and real-time monitoring dashboards. 
 The objective is complete population coverage so that every household in Punjab is included in the socio-economic registry.
-the survey is to be completed by 31st dec 2025, if you are not surveyed yet, an enumerator will come to your house before the 31st december. 
+
 ---
 
 ## *Chunk 4 — Hybrid Data Collection Model*

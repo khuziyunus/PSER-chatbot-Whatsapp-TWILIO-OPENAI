@@ -48,7 +48,7 @@ To get started, follow these steps:
    docker --version
    ```
 
-4. Create a `.env` file in the project directory and set your OpenAI API key, Twilio account details, Redis, translation, and (optionally) the knowledge-base file path as environment variables. By default, the app uses `app/data/PSER_info.txt`.
+4. Create a `.env` file in the project directory and set your OpenAI API key, Twilio account details, and (optionally) the knowledge-base file path as environment variables. By default, the app uses `app/data/PSER_info.txt`.
    ```plaintext
     TWILIO_WHATSAPP_NUMBER=<your Twilio phone number>
     TWILIO_ACCOUNT_SID=<your Twilio account SID>
@@ -58,11 +58,6 @@ To get started, follow these steps:
     REDIS_PORT=<your redis port>
     REDIS_PASSWORD=<your redis password>
     DATA_RAG=<optional absolute or relative path to a .txt knowledge base file>
-    # Google Cloud Translate (optional but recommended for language detection/translation)
-    GOOGLE_PROJECT_ID=<your gcp project id>
-    GOOGLE_LOCATION=global
-    # Path to service account credentials JSON for Google client libraries
-    GOOGLE_APPLICATION_CREDENTIALS=<absolute path to service-account.json>
    ```
    Optional tuning flags (set only if needed):
    - `ENABLE_CHAT_HISTORY=true|false` — keep Redis conversation memory.

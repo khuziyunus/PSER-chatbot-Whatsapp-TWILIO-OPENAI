@@ -10,7 +10,6 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 @lru_cache(maxsize=1)
 def _client() -> Groq:
-    """Create a cached Groq client using `GROQ_API_KEY` environment variable."""
     if not GROQ_API_KEY:
         raise RuntimeError("GROQ_API_KEY is not set but Groq model was requested.")
     return Groq(api_key=GROQ_API_KEY)
@@ -24,7 +23,10 @@ def groq_chat_completion(
     top_p: float = 1.0,
     stream: bool = False,
 ) -> str | Iterable[str]:
-    """Run a Groq chat completion and return text or a stream of chunks."""
+    """
+    Thin wrapper around Groq chat completions that matches our internal calling style.
+    Returns either the full response text or yields streamed chunks depending on `stream`.
+    """
     client = _client()
     response = client.chat.completions.create(
         model=model,
@@ -42,8 +44,3 @@ def groq_chat_completion(
         return response.choices[0].message.content.strip()
 
 
-"""Groq client helpers.
-
-Thin wrappers around Groq chat completions to match internal calling style
-and allow optional streaming.
-"""
