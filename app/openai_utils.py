@@ -185,7 +185,7 @@ def translate_text(text: str, target_language_code: str) -> str:
             response = client.translate_text(
                 request={
                     "parent": parent,
-                    "contents": [text],
+                    "contents": [text], 
                     "mime_type": "text/plain",
                     "target_language_code": target_language_code,
                 }
@@ -213,3 +213,45 @@ def translate_back_to_source(text: str, source_language_code: str | None) -> str
     if not source_language_code or source_language_code == "en":
         return text
     return translate_text(text, source_language_code)
+
+
+def translate_back_to_source_gpt(
+    question: str,
+    answer: str,
+    source_language_code: str | None,
+    model: str = "gpt-4o",
+) -> str:
+    if not answer:
+        return ""
+    if not source_language_code or source_language_code == "en":
+        return answer
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "You are a professional translator. Translate the assistant's answer "
+                f"into the language identified by ISO 639-1 code '{source_language_code}'. "
+                "Use the user's original question as context to resolve references. "
+                "Preserve meaning, entities, and formatting such as phone numbers "
+                "and the phrase 'Final Answer:' if present. Return only the translated answer."
+            ),
+        },
+        {
+            "role": "user",
+            "content": f"Question:\n{question}\n\nAnswer:\n{answer}",
+        },
+    ]
+    try:
+        resp = completion(
+            model=model,
+            messages=messages,
+            temperature=0.0,
+            max_tokens=MAX_TOKENS,
+            top_p=TOP_P,
+            frequency_penalty=FREQUENCY_PENALTY,
+            presence_penalty=PRESENCE_PENALTY,
+            stream=False,
+        )
+        return resp.choices[0].message.content.strip()
+    except Exception:
+        return answer

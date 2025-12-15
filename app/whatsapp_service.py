@@ -23,15 +23,15 @@ def _safe_detect_translate_to_english(text: str) -> tuple[str, str | None]:
         return text, "en"
 
 
-def _safe_translate(text: str, target_language_code: str | None) -> str:
-    """Translate `text` to `target_language_code` with safe fallbacks."""
+def _safe_translate(text: str, target_language_code: str | None, question: str | None = None) -> str:
+    """Translate `text` to `target_language_code` with safe fallbacks and context."""
     if not text:
         return ""
     if not target_language_code or target_language_code == "en":
         return text
     try:
-        from app.openai_utils import translate_back_to_source
-        return translate_back_to_source(text, target_language_code)
+        from app.openai_utils import translate_back_to_source_gpt
+        return translate_back_to_source_gpt(question or "", text, target_language_code)
     except Exception:
         return text
 
@@ -83,7 +83,7 @@ def process_whatsapp_message(message: str, session_id: str | None, enable_histor
             chat_history_for_rag = None
     rag_response = _safe_answer_with_rag(query_english, history_summary=history_summary, chat_history=chat_history_for_rag)
     chatbot_response = _extract_final_answer(rag_response)
-    final_response = _safe_translate(chatbot_response, source_lang)
+    final_response = _safe_translate(chatbot_response, source_lang, query)
     logger.info(f"Outgoing response: {final_response}")
     if enable_history and session_id:
         history.append({"role": "assistant", "content": final_response, "raw_response": rag_response})

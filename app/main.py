@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from twilio.rest import Client
 
 from app.cookies_utils import set_cookies, get_cookies, clear_cookies
-from app.openai_utils import summarise_conversation, detect_and_translate_to_english, translate_back_to_source
+from app.openai_utils import summarise_conversation, detect_and_translate_to_english, translate_back_to_source_gpt
 from app.redis_utils import redis_conn
 from app.logger_utils import logger
 from app.rag_utils import answer_question as answer_with_rag
@@ -89,7 +89,7 @@ async def whatsapp_endpoint(request: Request, From: str = Form(...), Body: str =
         return response_text.strip()
 
     chatbot_response = extract_final_answer(rag_response)
-    final_response = translate_back_to_source(chatbot_response, source_lang)
+    final_response = translate_back_to_source_gpt(query, chatbot_response, source_lang)
     logger.info(f'Outgoing response: {final_response}')
 
     if ENABLE_CHAT_HISTORY:
