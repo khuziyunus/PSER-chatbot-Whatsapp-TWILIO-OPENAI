@@ -1,4 +1,14 @@
-# Twilio-OpenAI-WhatsApp-Bot/app/openai_utils.py
+"""Language utilities for PSER chatbot.
+
+Provides:
+- Conversation summarization for short memory
+- Language detection (Google Cloud Translate v3)
+- Text translation (Google Cloud Translate v3)
+- Thin wrapper for LLM calls used in summarization
+
+These helpers are used by the FastAPI handlers to normalize user input and
+produce answers in the user's original language.
+"""
 
 import os 
 from dotenv import load_dotenv
@@ -9,6 +19,8 @@ load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
+USE_GPT_DETECTION = os.getenv("USE_GPT_DETECTION", "false").lower() == "true"
+USE_GPT_FORWARD_TRANSLATION = os.getenv("USE_GPT_FORWARD_TRANSLATION", "false").lower() == "true"
 
 # IF YOU WANT TO ADD MORE MODELS
 # GROQ_API_KEY = os.getenv("GROQ_API_KEY")
@@ -25,8 +37,8 @@ os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
 TEMPERATURE = 0.65
 MAX_TOKENS = 350
 STOP_SEQUENCES = ["==="]
-TOP_P = 1
-TOP_K = 1
+TOP_P = 0.9
+TOP_K = 0.1
 BEST_OF = 1
 FREQUENCY_PENALTY = 0
 PRESENCE_PENALTY = 0
@@ -50,7 +62,7 @@ SUPPORTED_MODELS = {
 
 
 def gpt_without_functions(model, stream=False, messages=[]):
-    """ GPT model without function call. """
+    """Call an LLM for non-tool usage (used for summarization)."""
     if model not in SUPPORTED_MODELS:
         return False
     response = completion(
@@ -68,7 +80,7 @@ def gpt_without_functions(model, stream=False, messages=[]):
 
 
 def summarise_conversation(history):
-    """Summarise conversation history in one sentence"""
+    """Summarize recent conversation turns into a short, single paragraph."""
 
     if not history:
         return "No prior conversation."

@@ -69,3 +69,81 @@ To get started, follow these steps:
    ```bash
    docker-compose up --build -d
    ```
+
+## Requirements
+
+- Python 3.10+
+- Docker and Docker Compose
+- Redis instance (local or remote)
+- Twilio WhatsApp Sandbox or a WhatsApp-enabled Twilio number
+- OpenAI API key (`OPENAI_API_KEY`)
+- Optional: Google Cloud Translate v3 (`GOOGLE_PROJECT_ID`, `GOOGLE_APPLICATION_CREDENTIALS`) for language detection/translation
+
+## How to Run
+
+### Docker Compose (recommended)
+
+1. Ensure `.env` contains all required variables.
+2. Run:
+   ```bash
+   docker-compose up --build -d
+   ```
+3. Open API docs:
+   ```
+   http://localhost:3002/docs
+   ```
+4. Configure Twilio webhook to:
+   ```
+   http://<your-host>:3002/whatsapp-endpoint
+   ```
+
+### Local (no Docker)
+
+1. Create and activate a virtual environment.
+   ```bash
+   python -m venv venv
+   # Windows
+   venv\Scripts\activate
+   # macOS/Linux
+   source venv/bin/activate
+   ```
+2. Install dependencies.
+   ```bash
+   pip install --upgrade pip
+   pip install -r requirements.txt
+   ```
+3. Ensure Redis is running and `.env` is set.
+4. Start the API server.
+   ```bash
+   uvicorn app.main:app --host 0.0.0.0 --port 3002 --reload
+   ```
+   Or with Gunicorn:
+   ```bash
+   gunicorn app.main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:3002
+   ```
+5. Verify:
+   ```
+   http://localhost:3002/docs
+   ```
+
+
+## Language Detection & Translation
+
+- Incoming WhatsApp messages are automatically processed with language detection.
+- The message is translated to English and passed into the RAG pipeline for answering.
+- The final answer is translated back to the original detected language and returned to the user on WhatsApp.
+
+### Providers
+
+- Primary: Google Cloud Translate v3 via `TranslationServiceClient` when `GOOGLE_PROJECT_ID` and `GOOGLE_APPLICATION_CREDENTIALS` are set.
+- Fallback: OpenAI (`gpt-3.5-turbo-0125`) used for detection/translation when Google Translate is not configured.
+
+### Quick Verification
+
+- After `docker-compose up`, open `http://localhost:3002/docs` to verify the FastAPI server.
+- Point Twilio webhook to `http://<host>:3002/whatsapp-endpoint`.
+
+### Notes
+
+- The FAISS index is built in-memory from `DATA_RAG` (default `app/data/PSER_info.txt`). Use `DATA_RAG` to override with your own `.txt` corpus.
+- Ensure your Google service account has the Cloud Translation API enabled in the target project.

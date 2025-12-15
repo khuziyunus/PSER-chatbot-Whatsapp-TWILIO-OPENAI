@@ -17,3 +17,8 @@ console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO)
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
+"""Application logger setup.
+
+Configures a rotating file handler and a console handler with a concise format.
+Import `logger` from this module to log consistently across the app.
+"""
