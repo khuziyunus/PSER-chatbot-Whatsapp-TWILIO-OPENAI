@@ -127,7 +127,7 @@ def translate_text_to_urdu(text: str) -> str:
     openai_response = completion(
         model="gpt-3.5-turbo-0125",
         messages=[
-            {"role": "system", "content": "Translate the user input into Urdu. Return only the translated text."},
+            {"role": "system", "content": "Translate the user input into Urdu. Return only the translated text. Keep the order of the numbers same ie 080002345"},
             {"role": "user", "content": text},
         ],
         temperature=0.2,
