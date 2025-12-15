@@ -11,3 +11,13 @@ services:
       - 3002:3002
     volumes:
       - ./logs:/app/logs
+  ngrok:
+    image: ngrok/ngrok:latest
+    restart: unless-stopped
+    depends_on:
+      - chatbot
+    command: http chatbot:3002
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    ports:
+      - 4040:4040
