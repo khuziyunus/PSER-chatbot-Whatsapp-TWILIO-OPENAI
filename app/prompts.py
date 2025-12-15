@@ -42,9 +42,3 @@ User: I have a conflict at work.
 Assistant: Conflicts at work can be really challenging. What specifically is causing the conflict, and how do you feel about it?
 
 """
-"""Prompt templates used by the PSER chatbot.
-
-`SUMMARY_PROMPT` is used to compress recent conversation turns into a short
-summary for context. `SYSTEM_PROMPT` is a generic brainstorming template
-kept for reference and experimentation.
-"""
