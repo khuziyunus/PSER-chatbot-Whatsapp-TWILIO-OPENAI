@@ -56,7 +56,7 @@ def _rag_chain():
                     "Do not user your  own information"
                     "Do not mention the use of PMT in your answer"
                     "This is not a part of BISP"
-                    "If the answer is not contained in the context, say you do not know and reply with please contact at [insert helpline] "
+                    "If the answer is not contained in the context, say you do not know and reply with please contact at 080002345 "
                     "Previous conversation summary: {history_summary}\n\n"
                     "Recent conversation turns:\n{chat_history}\n\n"
                     "Context:\n{context}\n\n"
